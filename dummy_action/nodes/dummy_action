@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+
+import rospy
+import actionlib
+import move_base_msgs.msg
+from geometry_msgs.msg import Twist
+
+
+class DummyAction(object):
+    # create result message
+    _result = move_base_msgs.msg.MoveBaseResult()
+
+    def __init__(self, name):
+
+        self._cmd_pub = rospy.Publisher('nav_vel', Twist, queue_size=1)
+
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, move_base_msgs.msg.MoveBaseAction, execute_cb=self.execute_cb, auto_start = False)
+        self._as.start()
+        rospy.loginfo('Dummy action server started! Waiting for calls..')
+
+
+    def execute_cb(self, goal):
+        rate = rospy.Rate(10)
+
+        rospy.loginfo('Sending command for 4 seconds!')
+
+        for i in range(40):
+            
+            # create command msg
+            cmd_msg = Twist()
+            cmd_msg.linear.x = 0.4
+            cmd_msg.linear.y = 0.2
+            cmd_msg.angular.z = 0.1
+
+            # publish command
+            self._cmd_pub.publish(cmd_msg)
+
+            # sleep for a bit
+            rate.sleep()
+
+        rospy.loginfo('Finished!')
+        self._as.set_succeeded(True)
+
+
+if __name__ == '__main__':
+    rospy.init_node('dummy_action')
+    server = DummyAction(rospy.get_name())
+    rospy.spin()
